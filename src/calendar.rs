@@ -1,5 +1,6 @@
 extern crate google_calendar3 as calendar3;
 extern crate yup_oauth2 as oauth2;
+use crate::path;
 use anyhow::{anyhow, Result};
 use calendar3::api::{CalendarListEntry, Event};
 use calendar3::CalendarHub;
@@ -11,7 +12,6 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use whiteread::parse_line;
-const CONF_PATH: &str = "/root/.pomodors/config";
 
 pub async fn get_hub(path: &Path) -> Result<calendar3::CalendarHub> {
     let secret = oauth2::read_application_secret(path).await?;
@@ -19,7 +19,7 @@ pub async fn get_hub(path: &Path) -> Result<calendar3::CalendarHub> {
         secret,
         oauth2::InstalledFlowReturnMethod::HTTPRedirect,
     )
-    .persist_tokens_to_disk("/root/.pomodors/tokencache.json")
+    .persist_tokens_to_disk(path::get_tokencache_path())
     .build()
     .await?;
 
@@ -90,7 +90,7 @@ struct Config {
 }
 
 fn read_config() -> Result<Config> {
-    let path = Path::new(CONF_PATH);
+    let path = path::get_conf_path();
     let parent = path.parent().unwrap();
     if !parent.exists() {
         create_dir_all(parent)?;
@@ -107,7 +107,7 @@ fn read_config() -> Result<Config> {
 }
 
 fn write_config(config: &Config) -> Result<()> {
-    let path = Path::new(CONF_PATH);
+    let path = path::get_conf_path();
     let mut file = File::create(path)?;
     Ok(file.write_all(serde_json::to_string(config)?.as_bytes())?)
 }
